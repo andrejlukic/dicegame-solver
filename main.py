@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import itertools
 
 from dice_game import DiceGame
@@ -98,7 +99,7 @@ class MyAgent(DiceGameAgent):
 
         you can always access the game with self.game
         """
-        actions = [(), (0,), (1,), (2,), (0, 1), (0, 2), (1, 2), (0, 1, 2)]
+        #actions = [(), (0,), (1,), (2,), (0, 1), (0, 2), (1, 2), (0, 1, 2)]
         v_arr = {}
         policy = {}
         for state in game.states:
@@ -114,7 +115,7 @@ class MyAgent(DiceGameAgent):
             for state in game.states:
                 s_val = v_arr[state]
                 max_action = 0
-                for action in actions:
+                for action in game.actions:
                     sum = 0
                     states, game_over, reward, probabilities = game.get_next_states(action, state)
                     for s1, p1 in zip(states, probabilities):
@@ -162,9 +163,6 @@ if __name__ == "__main__":
     SKIP_TESTS = False
 
     if not SKIP_TESTS:
-        import time
-
-
 
         print("Testing basic rules.")
         print()
@@ -193,4 +191,36 @@ if __name__ == "__main__":
             scores.append(total_score / n)
             print(f"Average score: {total_score / n}")
             print(f"Total time: {total_time:.4f} seconds")
+        print("Overall AVG score {}".format(np.mean(scores)))
+
+    TEST_EXTENDED_RULES = True
+
+    if TEST_EXTENDED_RULES:
+
+
+        print("Testing extended rules – two three-sided dice.")
+        print()
+
+        scores = []
+        for _ in range(10):
+            total_score = 0
+            total_time = 0
+            n = 1000
+            game = DiceGame(dice=2, sides=3)
+
+            start_time = time.process_time()
+            test_agent = MyAgent(game)
+            total_time += time.process_time() - start_time
+
+            for i in range(n):
+                start_time = time.process_time()
+                score = play_game_with_agent(test_agent, game)
+                total_time += time.process_time() - start_time
+
+                print(f"Game {i} score: {score}")
+                total_score += score
+
+            scores.append(total_score / n)
+            print(f"Average score: {total_score / n}")
+            print(f"Average time: {total_time / n:.5f} seconds")
         print("Overall AVG score {}".format(np.mean(scores)))
