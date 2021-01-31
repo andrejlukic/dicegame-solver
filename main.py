@@ -1,6 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import time
-import itertools
 
 from dice_game import DiceGame
 from abc import ABC, abstractmethod
@@ -17,20 +17,6 @@ class DiceGameAgent(ABC):
     @abstractmethod
     def play(self, state):
         pass
-
-
-class AlwaysHoldAgent(DiceGameAgent):
-    def play(self, state):
-        return (0, 1, 2)
-
-
-class PerfectionistAgent(DiceGameAgent):
-    def play(self, state):
-        if state == (1, 1, 1) or state == (1, 1, 6):
-            return (0, 1, 2)
-        else:
-            return ()
-
 
 def play_game_with_agent(agent, game, verbose=False):
     state = game.reset()
@@ -52,66 +38,26 @@ def play_game_with_agent(agent, game, verbose=False):
 
     return game.score
 
-def value_iteration(game):
-    v_arr = {}
-    policy = {}
-    for state in game.states:
-        v_arr[state] = 0
-        policy[state] = ()
-    #print(policy)
-
-    gamma = 0.9
-    thetta = 0.01
-    delta = 1000
-    actions = [(), (0,), (1,), (2,), (0, 1), (0, 2), (1, 2), (0, 1, 2)]
-    log("Starting value iteration gamme = {}, thetta = {}".format(gamma, thetta))
-    while (delta >= thetta):
-        delta = 0
-        for state in game.states:
-            s_val = v_arr[state]
-            max_action = 0
-            for action in actions:
-                sum = 0
-                states, game_over, reward, probabilities = game.get_next_states(action, state)
-                for s1, p1 in zip(states, probabilities):
-                    if not game_over:
-                        sum += p1 * (reward + gamma * v_arr[s1])
-                    else:
-                        sum += p1 * (reward + gamma * game.final_score(state))
-                if sum > max_action:
-                    max_action = sum
-                    policy[state] = action
-            v_arr[state] = max_action
-            delta = max(delta, abs(s_val - v_arr[state]))
-        log("Delta = {}".format(delta))
-    log("Policy converged = {}".format(policy))
-
-    return policy
-
-
 class MyAgent(DiceGameAgent):
-    def __init__(self, game):
-        """
-        if your code does any pre-processing on the game, you can do it here
+    def __init__(self, game, gamma = 0.95, theta = 3):
+        """Initializes the agent by performing a value iteration
 
-        e.g. you could do the value iteration algorithm here once, store the policy,
-        and then use it in the play method
-
-        you can always access the game with self.game
+        After the value iteration is run an optimal policy is returned. This
+        policy instructs agent on what action to take in any possible state.
         """
-        #actions = [(), (0,), (1,), (2,), (0, 1), (0, 2), (1, 2), (0, 1, 2)]
+        # this calls the superclass constructor (does self.game = game)
+        super().__init__(game)
+
+        # value iteration
         v_arr = {}
         policy = {}
         for state in game.states:
             v_arr[state] = 0
             policy[state] = ()
-        # print(policy)
 
-        gamma = 0.9
-        thetta = 0.01
-        delta = 1000
-        while (delta >= thetta):
-            delta = 0
+        delta_max = theta + 1  # initialize to be over theta treshold
+        while (delta_max >= theta):
+            delta_max = 0
             for state in game.states:
                 s_val = v_arr[state]
                 max_action = 0
@@ -127,15 +73,9 @@ class MyAgent(DiceGameAgent):
                         max_action = sum
                         policy[state] = action
                 v_arr[state] = max_action
-                delta = max(delta, abs(s_val - v_arr[state]))
+                delta_max = max(delta_max, abs(s_val - v_arr[state]))
 
         self._policy = policy
-        # return policy
-
-        # this calls the superclass constructor (does self.game = game)
-        super().__init__(game)
-
-        # YOUR CODE HERE
 
     def play(self, state):
         """
@@ -185,6 +125,8 @@ def stats(basic = True, extended = True):
             # print(f"Average score: {total_score / n}")
             # print(f"Total time: {total_time:.4f} seconds")
         print("10x1000 - Overall AVG score {} and AVG time {}".format(np.mean(scores), np.mean(times)))
+        for s,t in zip(scores,times):
+            print(round(s,2),round(t,2))
 
     if extended:
 
@@ -207,8 +149,6 @@ def stats(basic = True, extended = True):
                 start_time = time.process_time()
                 score = play_game_with_agent(test_agent, game)
                 total_time += time.process_time() - start_time
-
-                # print(f"Game {i} score: {score}")
                 total_score += score
 
             scores.append(total_score / n)
@@ -216,7 +156,100 @@ def stats(basic = True, extended = True):
             # print(f"Average score: {total_score / n}")
             # print(f"Average time: {total_time / n:.5f} seconds")
         print("10x1000 - Overall AVG score {} and AVG time {}".format(np.mean(scores), np.mean(times)))
+        for s,t in zip(scores,times):
+            print(round(s,2),round(t,2))
+
+        print("Testing extended rules – six six-sided dice.")
+        print()
+
+        scores = []
+        times = []
+        for _ in range(10):
+            total_score = 0
+            total_time = 0
+            n = 10
+            game = DiceGame(dice=6, sides=6)
+
+            start_time = time.process_time()
+            test_agent = MyAgent(game)
+            total_time += time.process_time() - start_time
+
+            for i in range(n):
+                start_time = time.process_time()
+                score = play_game_with_agent(test_agent, game)
+                total_time += time.process_time() - start_time
+                total_score += score
+
+            scores.append(total_score / n)
+            times.append(total_time)
+            # print(f"Average score: {total_score / n}")
+            # print(f"Average time: {total_time / n:.5f} seconds")
+        print("10x1000 - Overall AVG score {} and AVG time {}".format(np.mean(scores), np.mean(times)))
+        for s,t in zip(scores,times):
+            print(round(s,2),round(t,2))
+
+def hyper_tuning():
+
+    print("Tuning parameters gamma and theta")
+    print()
+
+    #test_gamma = np.arange(0.88, 0.999, 0.002)
+    test_gamma = [0.95]
+    test_theta = np.arange(1, 50, 1)
+
+    scores = []
+    times = []
+    for g in test_gamma:
+        for t in test_theta:
+
+            total_score = 0
+            total_time = 0
+            n = 1000
+
+            np.random.seed()
+            game = DiceGame()
+
+            start_time = time.process_time()
+            test_agent = MyAgent(game, gamma=g, theta=t)
+            total_time += time.process_time() - start_time
+
+            for i in range(n):
+                start_time = time.process_time()
+                score = play_game_with_agent(test_agent, game)
+                total_time += time.process_time() - start_time
+                total_score += score
+
+            scores.append(total_score / n)
+            times.append(total_time)
+
+    #for g,s,t in zip(test_gamma,scores,times):
+    for g, s, t in zip(test_theta, scores, times):
+        print(round(g,3),round(s,3), round(t,3))
+
+
+    print("10x20 -[gamma = {:0.3f}, theta = {:0.3f}] Overall AVG score {:0.3f} and AVG time {:0.3f}".format(g, t, np.mean(scores), np.mean(times)))
+    #plt.plot(test_gamma, scores)
+    #plt.xlabel('gamma')
+    plt.plot(test_theta, scores)
+    plt.xlabel('theta')
+    plt.ylabel('game score')
+    plt.title('Average game score of 1000 games')
+    plt.grid(True)
+    #plt.savefig("gamma_tunning.png")
+    plt.savefig("theta_tunning.png")
+    plt.show()
+
+    #plt.plot(test_gamma, times)
+    #plt.xlabel('gamma')
+    plt.plot(test_theta, times)
+    plt.xlabel('theta')
+    plt.ylabel('time')
+    plt.title('Average time to converge')
+    plt.grid(True)
+    plt.savefig("gamma_tunning_times.png")
+    plt.show()
 
 if __name__ == "__main__":
     stats(basic = True, extended=True)
+    #hyper_tuning()
 
