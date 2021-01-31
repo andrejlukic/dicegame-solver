@@ -152,22 +152,14 @@ class MyAgent(DiceGameAgent):
 
         return self._policy[state]
 
-if __name__ == "__main__":
-    # random seed makes the results deterministic
-    # change the number to see different results
-    #  or delete the line to make it change each time it is run
-    #states = np.array(list(itertools.combinations_with_replacement(np.arange(1, game._sides + 1),
-    #                                                                   game._dice)),
-    #                      dtype=np.int)
 
-    SKIP_TESTS = False
-
-    if not SKIP_TESTS:
-
+def stats(basic = True, extended = True):
+    if basic:
         print("Testing basic rules.")
         print()
 
         scores = []
+        times = []
         for _ in range(10):
             total_score = 0
             total_time = 0
@@ -185,23 +177,22 @@ if __name__ == "__main__":
                 score = play_game_with_agent(test_agent, game)
                 total_time += time.process_time() - start_time
 
-                print(f"Game {i} score: {score}")
+                # print(f"Game {i} score: {score}")
                 total_score += score
 
             scores.append(total_score / n)
-            print(f"Average score: {total_score / n}")
-            print(f"Total time: {total_time:.4f} seconds")
-        print("Overall AVG score {}".format(np.mean(scores)))
+            times.append(total_time)
+            # print(f"Average score: {total_score / n}")
+            # print(f"Total time: {total_time:.4f} seconds")
+        print("10x1000 - Overall AVG score {} and AVG time {}".format(np.mean(scores), np.mean(times)))
 
-    TEST_EXTENDED_RULES = True
-
-    if TEST_EXTENDED_RULES:
-
+    if extended:
 
         print("Testing extended rules – two three-sided dice.")
         print()
 
         scores = []
+        times = []
         for _ in range(10):
             total_score = 0
             total_time = 0
@@ -217,10 +208,15 @@ if __name__ == "__main__":
                 score = play_game_with_agent(test_agent, game)
                 total_time += time.process_time() - start_time
 
-                print(f"Game {i} score: {score}")
+                # print(f"Game {i} score: {score}")
                 total_score += score
 
             scores.append(total_score / n)
-            print(f"Average score: {total_score / n}")
-            print(f"Average time: {total_time / n:.5f} seconds")
-        print("Overall AVG score {}".format(np.mean(scores)))
+            times.append(total_time)
+            # print(f"Average score: {total_score / n}")
+            # print(f"Average time: {total_time / n:.5f} seconds")
+        print("10x1000 - Overall AVG score {} and AVG time {}".format(np.mean(scores), np.mean(times)))
+
+if __name__ == "__main__":
+    stats(basic = True, extended=True)
+
