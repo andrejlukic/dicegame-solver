@@ -38,6 +38,12 @@ def play_game_with_agent(agent, game, verbose=False):
 
     return game.score
 
+def get_next_states_cached(game, cache, action, state):
+    if (action, state) not in cache:
+        cache[(action, state)] = game.get_next_states(action, state)
+    return cache[(action, state)]
+
+
 class MyAgent(DiceGameAgent):
     def __init__(self, game, gamma = 0.95, theta = 3):
         """Initializes the agent by performing a value iteration
@@ -49,6 +55,7 @@ class MyAgent(DiceGameAgent):
         super().__init__(game)
 
         # value iteration
+        local_cache = {}
         v_arr = {}
         policy = {}
         for state in game.states:
@@ -63,7 +70,8 @@ class MyAgent(DiceGameAgent):
                 max_action = 0
                 for action in game.actions:
                     sum = 0
-                    states, game_over, reward, probabilities = game.get_next_states(action, state)
+                    #states, game_over, reward, probabilities = game.get_next_states(action, state)
+                    states, game_over, reward, probabilities = get_next_states_cached(game, local_cache, action, state)
                     for s1, p1 in zip(states, probabilities):
                         if not game_over:
                             sum += p1 * (reward + gamma * v_arr[s1])
