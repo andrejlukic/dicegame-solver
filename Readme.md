@@ -2,22 +2,21 @@
 
 ## Introduction
 
-The goal of this work is to write an agent that is able to play the dice game as described by the following rules:
-* Player starts with 0 points
-* Player rolls three fair six-sided dice
-* After ever roll the player chooses one of the following:
-    * Stick, accept the values shown. If two or more dice show the same values, then all of them are flipped upside down: 1 becomes 6, 2 becomes 5, 3 becomes 4, and vice versa. The total is then added to your points and this is your final score.
-    * OR reroll the dice. The player may choose to hold any combination of the dice on the current value shown. Rerolling costs 1 point – so during the game and perhaps even at the end your score may be negative. You then make this same choice again.
-* The best possible score for this game is 18 and is achieved by rolling three 1s on the first roll.
+The goal of this work is to write an agent that is able to play a game of dice and score as many points as possible. The rules of the game are as follows:
+
+* Player starts with 0 points and rolls three fair six-sided dice. This can also be extended to any number of modified dice, e.g. three three-sided dice
+* After each roll the player can decide to either stick or reroll:
+    * If she sticks the values shown are accepted. If two or more dice show the same values, then all of them are flipped upside down: 1 becomes 6, 2 becomes 5, 3 becomes 4, and vice versa. The total is then added to player's points and this is the final score.
+    * If she rerolls the dice she may choose to hold any combination of the dice on the current value shown. Rerolling costs 1 point so the score may end up being negative.
 
 ![Dice](images/dice_pic.png "Average game score of 1000 games for different theta") 
 Image:  Diacritica [2] (Source: Wikipedia [1])
 
 ## Method
 
-Several iterations of the algorithm were implemented and the final approach is a value iteration approach that calculates an optimal policy for the agent. It works for normal, fair dice as well as modified ones with an arbitrary number of sides. 
+Several iterations of the algorithm were implemented and the approach that proved to be the fastest and at the same time most successful is a value iteration approach that calculates an optimal policy for the agent using the Bellman optimality equation ([3]). It works for normal fair dice as well as modified ones with arbitrary number of sides. 
 
-In the basic example three fair dice are used (each with six sides). Each roll ends in one of the 56 possible game states. Since the dice is unbiased all states are equally probable. For clarity all 56 of them are listed here (D1, D2 and D3 are the three dices being rolled):
+In the basic example three fair dice are used (each with six sides). Each roll ends in one of the 56 possible game states. Since the dice is unbiased all states are equally probable. All 56 of them are listed here (D1, D2 and D3 are the three dices being rolled):
 
 | D1 | D2 | D3 | D1 | D2 | D3 | D1 | D2 | D3 | D1 | D2 | D3 | D1 | D2 | D3 | D1 | D2 | D3 |
 |----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
@@ -43,9 +42,9 @@ In the basic example three fair dice are used (each with six sides). Each roll e
 | 1  | 5  | 6  |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |
 | 1  | 6  | 6  |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |
 
-The value iteration algorithm starts with assigning an initial value of zero to each of these states. Then it performs the update equation based on the Bellman optimality equation to find the optimal values for each state along with an action that produces it. The optimal policy consisting of pairs (state, action) is then returned and used to play the game. 
+The value iteration algorithm starts with assigning an initial value of zero to each of these states. Then it performs the update equation based on the Bellman optimality equation ([3]) to find the optimal values for each state along with an action that produces it. The optimal policy consisting of pairs (state, action) is then returned and used to play the game. 
 
-The algorithm caches certain expensive computations in memory and performs relatively fast. It is able to run for any number of dices and any number of faces. As shown later in the results section the average score of the algorithm is around 13.3 for three fair dice with six faces, 4.3 for three fair dice with three faces and 29.2 for six fair dice with six faces.
+The algorithm caches certain expensive computations in memory and converges relatively fast. It is able to run for any number of dices and any number of faces. As shown later in the results section the average score of the algorithm is around 13.3 for three fair dice with six faces, 4.3 for three fair dice with three faces and 29.2 for six fair dice with six faces.
 
 ### Important functions
 The core of the code is the algorithm that performs value iteration to calculate the optimal policy. Since the optimal policy only depends on the dice configuration this can be performed once at the instantiation of the MyAgent class.
@@ -491,3 +490,4 @@ For transparency purposes all of the measurements are included here:
 
 [1]: https://en.wikipedia.org/wiki/Dice
 [2]: https://commons.wikimedia.org/wiki/User:Diacritica
+[3]: https://en.wikipedia.org/wiki/Bellman_equation#The_Bellman_equation
