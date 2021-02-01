@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The goal of this work is to write an agent that is able to play the dice game described by the following rules:
+The goal of this work is to write an agent that is able to play the dice game as described by the following rules:
 * Player starts with 0 points
 * Player rolls three fair six-sided dice
 * After ever roll the player chooses one of the following:
@@ -15,7 +15,9 @@ Image:  Diacritica [2] (Source: Wikipedia [1])
 
 ## Method
 
-Several iterations of the algorithm were implemented and the final approach is a value iteration approach that calculates an optimal policy for the agent. If three fair and normal dice are considered then each has six sides numbered from 1 to 6. Each roll ends in one of the 56 possible game states. Since the dice is unbiased all states are equally probable. For clarity all 56 of them are listed here (D1, D2 and D3 are the three dices being rolled):
+Several iterations of the algorithm were implemented and the final approach is a value iteration approach that calculates an optimal policy for the agent. It works for normal, fair dice as well as modified ones with an arbitrary number of sides. 
+
+In the basic example three fair dice are used (each with six sides). Each roll ends in one of the 56 possible game states. Since the dice is unbiased all states are equally probable. For clarity all 56 of them are listed here (D1, D2 and D3 are the three dices being rolled):
 
 | D1 | D2 | D3 | D1 | D2 | D3 | D1 | D2 | D3 | D1 | D2 | D3 | D1 | D2 | D3 | D1 | D2 | D3 |
 |----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|
@@ -41,41 +43,60 @@ Several iterations of the algorithm were implemented and the final approach is a
 | 1  | 5  | 6  |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |
 | 1  | 6  | 6  |    |    |    |    |    |    |    |    |    |    |    |    |    |    |    |
 
-The algorithm performs relatively fast and is able to run for any number of dices and any number of faces. As shown later in the results section the average score of the algorithm is around 13.3 for three fair dice with six faces which is reasonably good.
+The value iteration algorithm starts with assigning an initial value of zero to each of these states. Then it performs the update equation based on the Bellman optimality equation to find the optimal values for each state along with an action that produces it. The optimal policy consisting of pairs (state, action) is then returned and used to play the game. 
+
+The algorithm caches certain expensive computations in memory and performs relatively fast. It is able to run for any number of dices and any number of faces. As shown later in the results section the average score of the algorithm is around 13.3 for three fair dice with six faces, 4.3 for three fair dice with three faces and 29.2 for six fair dice with six faces.
 
 ### Important functions
-The core of the algorithm is a method that performs value iteration when the MyAgent class is instantiated. Each of possible 56 states starts with a value zero and is subsequently corrected as the algorithm progresses. The threshold theta has been tuned to offer a compromise between algorithm successfully converging and executing fast:
+The core of the code is the algorithm that performs value iteration to calculate the optimal policy. Since the optimal policy only depends on the dice configuration this can be performed once at the instantiation of the MyAgent class.
+
+#### Calculating the optimal policy 
+The optimal policy is calculated at the moment of MyAgent class instantiation. Each of possible 56 states starts with a value zero and is subsequently corrected as the algorithm progresses. The threshold theta has been tuned to offer a compromise between algorithm successfully converging and executing fast. For performance reasons the get_next_states method has been replaced with a faster version get_next_states_cached that stores the already calculated list of next states in memory for use in the subsequent iterations.
 
 ```{python}
-def __init__(self, game, gamma = 0.95, theta = 3):
+def __init__(self, game, gamma = 0.96, theta = 0.1):
+
+    super().__init__(game)
+
+    # value iteration
+    local_cache = {}
     v_arr = {}
     policy = {}
     for state in game.states:
         v_arr[state] = 0
         policy[state] = ()
-
-    delta_max = theta + 1 # initialize to be over theta treshold
+    
+    delta_max = theta + 1  # initialize to be over theta treshold
     while (delta_max >= theta):
         delta_max = 0
         for state in game.states:
             s_val = v_arr[state]
             max_action = 0
             for action in game.actions:
-                sum = 0
-                states, game_over, reward, probabilities = game.get_next_states(action, state)
+                s1_sum = 0            
+                states, game_over, reward, probabilities = get_next_states_cached(game, local_cache, action, state)
                 for s1, p1 in zip(states, probabilities):
                     if not game_over:
-                        sum += p1 * (reward + gamma * v_arr[s1])
+                        s1_sum += p1 * (reward + gamma * v_arr[s1])
                     else:
-                        sum += p1 * (reward + gamma * game.final_score(state))
-                if sum > max_action:
-                    max_action = sum
+                        s1_sum += p1 * (reward + gamma * game.final_score(state))
+                if s1_sum > max_action:
+                    max_action = s1_sum
                     policy[state] = action
             v_arr[state] = max_action
             delta_max = max(delta_max, abs(s_val - v_arr[state]))
+    
     self._policy = policy
 ```
 
+Storing a list of next states in memory to avoid recalculating same list of next states repeatedly:
+
+```{python}
+def get_next_states_cached(game, cache, action, state):
+    if (action, state) not in cache:
+        cache[(action, state)] = game.get_next_states(action, state)
+    return cache[(action, state)]
+```
  
 ### Tuning hyper-parameters gamma / theta
 Initially typical values of 0.9 and 0.01 were chosen for the parameters gamma and theta. Then a simple tuning has been done to determine whether their values could be optimised and for both a more suitable value was found. An average score of 10000 games was used as a metric. 
@@ -89,10 +110,10 @@ An initial setting for theta was 0.01 and it quickly became obvious that increas
  
  ![Theta execution time](images/theta_time.png "Average time to converge")
  
- A value of 3 was finally chosen for theta as a compromise between speed of execution and algorithm success.
+ A value of 0.1 was finally chosen for theta as a compromise between speed of execution and algorithm success.
  
  #### Gamma
- An initial setting for gamma was 0.90 and the measurements showed that this was a reasonably good guess for this parameter. However the measurements also showed that this could be slightly improved by increasing it to 0.95. How algorithm scored based on various gamma settings can be observed on a picture (a table of measurements are included in the last section.):
+ An initial setting for gamma was 0.90 and the measurements showed that this was a reasonably good guess for this parameter. However the measurements also showed that this could be slightly improved by increasing it to 0.96. How algorithm scored based on various gamma settings can be observed on a picture (a table of measurements are included in the last section.):
  
  ![Gamma](images/gamma.png "Average game score of 1000 games for different theta") 
  
@@ -100,7 +121,7 @@ An initial setting for theta was 0.01 and it quickly became obvious that increas
  
 
 ## Results
-Final results of the algorithm were measured by repeating the solving of 10000 games. The resulting table shows an average score of 1000 games and time required for playing the 1000 games including the value iteration at the beginning of each batch of 1000 games.
+Final success of the algorithm was measured by repeatedly playing batches of 1000 games. The resulting table shows a average scores and the time it took to calculate the average policy and play the batch of 1000 games.
 
 ### Average score and time for playing 10000 games
 
@@ -119,6 +140,8 @@ For a game of three dice with six sides these are the results:
 | 13,3  | 0,42       |
 | 13,32 | 0,41       |
 
+An average score 13,33	and average time 0,42 seconds.
+
 For a game of two dice with three sides these are the results:
 
 | Score | Time (sec) |
@@ -134,21 +157,15 @@ For a game of two dice with three sides these are the results:
 | 4,28  | 0,09       |
 | 4,23  | 0,09       |
 
-For a game of six dice with six sides the number of games played was reduced to a hundred in total. The following are average results of 10 games played 10 times:
+An average score 4,25 and average time 0,09 seconds.
+
+For a game of six dice with six sides the number of games played was reduced to a hundred in total. 
 
 | Score | Time (sec) |
 |-------|------------|
-| 28,7  | 55,38      |
-| 29,2  | 55,6       |
-| 27,7  | 55,62      |
-| 29,3  | 55,76      |
-| 27,8  | 55,61      |
-| 28,3  | 55,81      |
-| 30,7  | 55,52      |
-| 29,1  | 55,76      |
-| 29,1  | 55,77      |
-| 29,3  | 55,57      |
+| 29,2  | 32,08      |
 
+An average score of hundred games was 29,2 and time 32,08 seconds.
 
 ### Individual measurements
 For transparency purposes all of the measurements are included here:

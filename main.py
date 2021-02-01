@@ -45,7 +45,7 @@ def get_next_states_cached(game, cache, action, state):
 
 
 class MyAgent(DiceGameAgent):
-    def __init__(self, game, gamma = 0.95, theta = 3):
+    def __init__(self, game, gamma = 0.96, theta = 0.1):
         """Initializes the agent by performing a value iteration
 
         After the value iteration is run an optimal policy is returned. This
@@ -69,16 +69,16 @@ class MyAgent(DiceGameAgent):
                 s_val = v_arr[state]
                 max_action = 0
                 for action in game.actions:
-                    sum = 0
+                    s1_sum = 0
                     #states, game_over, reward, probabilities = game.get_next_states(action, state)
                     states, game_over, reward, probabilities = get_next_states_cached(game, local_cache, action, state)
                     for s1, p1 in zip(states, probabilities):
                         if not game_over:
-                            sum += p1 * (reward + gamma * v_arr[s1])
+                            s1_sum += p1 * (reward + gamma * v_arr[s1])
                         else:
-                            sum += p1 * (reward + gamma * game.final_score(state))
-                    if sum > max_action:
-                        max_action = sum
+                            s1_sum += p1 * (reward + gamma * game.final_score(state))
+                    if s1_sum > max_action:
+                        max_action = s1_sum
                         policy[state] = action
                 v_arr[state] = max_action
                 delta_max = max(delta_max, abs(s_val - v_arr[state]))
@@ -147,6 +147,7 @@ def stats(basic = True, extended = True):
             total_score = 0
             total_time = 0
             n = 1000
+            np.random.seed()
             game = DiceGame(dice=2, sides=3)
 
             start_time = time.process_time()
@@ -172,10 +173,11 @@ def stats(basic = True, extended = True):
 
         scores = []
         times = []
-        for _ in range(10):
+        for _ in range(1):
             total_score = 0
             total_time = 0
-            n = 10
+            n = 1000
+            np.random.seed()
             game = DiceGame(dice=6, sides=6)
 
             start_time = time.process_time()
