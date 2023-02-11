@@ -1,4 +1,4 @@
-# Dice game agent
+# Solving a game of dice using value iteration / Bellman optimality equations
 
 ## Introduction
 
