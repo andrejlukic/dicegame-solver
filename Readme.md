@@ -1,4 +1,4 @@
-# Solving a game of dice using value iteration / Bellman optimality equations
+# Solving a game of dice using value iteration
 
 ## Introduction
 
